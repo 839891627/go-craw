@@ -19,7 +19,7 @@ func ParseCity(contents []byte) engine.ParseResult {
 		results.Items = append(results.Items, "User "+name) // 用户名
 		results.Requests = append(results.Requests, engine.Request{
 			Url: string(m[1]), // 个人页
-			ParserFunc: func(c []byte) engine.ParseResult {
+			ParserFunc: func(c []byte) engine.ParseResult { // 使用闭包，巧妙的把额外参数传进去
 				return ParseProfile(c, name)
 			},
 		})
