@@ -19,10 +19,11 @@ func (e SimpleEngine) Run(seeds ...Request) {
 		requests = requests[1:]
 
 		parseResult, err := worker(r)
+
 		if err != nil {
 			continue
 		}
-		requests = append(requests, parseResult.Requests...)
+		requests = append(requests, parseResult.Requests...) // 解析后需要继续爬取的 url 加入请求队列
 
 		for _, item := range parseResult.Items {
 			log.Printf("Got item %v", item)
@@ -30,13 +31,11 @@ func (e SimpleEngine) Run(seeds ...Request) {
 	}
 }
 
-// fetch + parse 抽成 worker
 func worker(r Request) (ParseResult, error) {
+	//log.Printf("Fetching %s", r.Url)
 	body, err := fetcher.Fetch(r.Url)
-	log.Printf("Fetching %s", r.Url)
-
 	if err != nil {
-		log.Printf("Fetcher： error fetcheing url %s: %v", r.Url, err)
+		log.Printf("Fetcher: error fetching url %s: %v", r.Url, err)
 		return ParseResult{}, err
 	}
 

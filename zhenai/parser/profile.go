@@ -2,52 +2,45 @@ package parser
 
 import (
 	"crawler/engine"
-	"crawler/mode"
+	"crawler/model"
 	"regexp"
 	"strconv"
 )
 
-var ageRe = regexp.MustCompile(`<td><span class="label">年龄：</span>([\d]+)岁</td>`)
-var marriageRe = regexp.MustCompile(`<td><span class="label">婚况：</span>([^<]+)</td>`)
-var incomeRe = regexp.MustCompile(`<td><span class="label">月收入：</span>([^<]+)元</td>`)
-var educationRe = regexp.MustCompile(`<td><span class="label">学历：</span>([^<]+)</td>`)
+var nameRe = regexp.MustCompile(`<h1 class="ceiling-name ib fl fs24 lh32 blue">([^<]+)</h1>`)
+var descRe = regexp.MustCompile(`<p class="ceiling-age fs14 lh22 c5e">([^<]+)</p>`)
+var ageRe = regexp.MustCompile(`<td><span class="label">年龄：</span>(\d+)岁</td>`)
 var heightRe = regexp.MustCompile(`<td><span class="label">身高：</span>(\d+)CM</td>`)
-var weightRe = regexp.MustCompile(`<td><span class="label">体重：</span><span field="">(\d+)KG</span></td>`)
-var xinzuoRe = regexp.MustCompile(`<td><span class="label">星座：</span><span field="">([^<]+)</span></td>`)
-var hokouRe = regexp.MustCompile(`<td><span class="label">籍贯：</span>([^<]+)</td>`)
-var carRe = regexp.MustCompile(`<td><span class="label">是否购车：</span><span field="">([^<]+)</span></td>`)
-var houseRe = regexp.MustCompile(`<td><span class="label">住房条件：</span><span field="">([^<]+)</span></td>`)
-var genderRe = regexp.MustCompile(`<td><span class="label">性别：</span><span field="">([^<]+)</span></td>`)
+var guessRe = regexp.MustCompile(`href="(http://localhost:8888/mock/album.zhenai.com/u/[^"+])">([^<]+)</a>`)
 
 func ParseProfile(contents []byte, name string) engine.ParseResult {
-	profile := mode.Profile{}
-	profile.Name = name
+	profile := model.Profile{}
 
-	age, err := strconv.Atoi(extractString(contents, ageRe))
-	if err == nil {
+	profile.Name = name
+	profile.Desc = extractString(contents, descRe)
+
+	if age, err := strconv.Atoi(extractString(contents, ageRe)); err == nil {
 		profile.Age = age
 	}
-
-	profile.Marriage = extractString(contents, marriageRe)
-	profile.Income = extractString(contents, incomeRe)
-	profile.Education = extractString(contents, educationRe)
-	height, err := strconv.Atoi(extractString(contents, heightRe))
-	if err == nil {
+	if height, err := strconv.Atoi(extractString(contents, heightRe)); err == nil {
 		profile.Height = height
 	}
-	weight, err := strconv.Atoi(extractString(contents, weightRe))
-	if err == nil {
-		profile.Weight = weight
-	}
-	profile.Hokou = extractString(contents, hokouRe)
-	profile.Xinzuo = extractString(contents, xinzuoRe)
-	profile.Car = extractString(contents, carRe)
-	profile.House = extractString(contents, houseRe)
-	profile.Gender = extractString(contents, genderRe)
 
 	result := engine.ParseResult{
 		Items: []interface{}{profile},
 	}
+
+	matches := guessRe.FindAllSubmatch(contents, -1)
+	for _, m := range matches {
+		name := string(m[2])
+		result.Requests = append(result.Requests, engine.Request{
+			Url: string(m[1]),
+			ParserFunc: func(bytes []byte) engine.ParseResult {
+				return ParseProfile(bytes, name)
+			},
+		})
+	}
+
 	return result
 }
 

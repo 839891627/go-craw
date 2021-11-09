@@ -1,21 +1,24 @@
 package main
 
 import (
+	"crawler/douban/parser"
 	"crawler/engine"
+	"crawler/persist"
 	"crawler/scheduler"
-	"crawler/zhenai/parser"
 )
 
 func main() {
-	url := "http://127.0.0.1:8080/mock/www.zhenai.com/zhenghun"
-
+	doubanUrl := "https://movie.douban.com/chart"
 	e := engine.ConcurrentEngine{
-		Scheduler:   &scheduler.SimpleScheduler{},
-		WorkerCount: 50,
+		Scheduler: &scheduler.QueuedScheduler{},
+		//Scheduler:   &scheduler.SimpleScheduler{},
+		WorkerCount: 100,
+		ItemChan: persist.ItemSaver(),
 	}
-
 	e.Run(engine.Request{
-		Url:        url,
-		ParserFunc: parser.ParseCityList,
+		Url:        doubanUrl,
+		ParserFunc: parser.ParseMovieList,
+		//Url:        "https://movie.douban.com/subject/26897885/",
+		//ParserFunc: parser.ParseMovie,
 	})
 }
